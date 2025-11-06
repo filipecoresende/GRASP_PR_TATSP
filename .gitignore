@@ -1,0 +1,58 @@
+# Compiled Object files and libraries
+*.o
+*.obj
+*.lo
+*.la
+*.so
+*.a
+*.dll
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.bin
+
+# Build directories
+build/
+bin/
+obj/
+Debug/
+Release/
+x64/
+Win32/
+
+# IDE-specific files (e.g., Visual Studio, VS Code, CLion)
+.vs/
+*.vcxproj.user
+*.suo
+*.user
+*.ncb
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.VC.opendb
+*.code-workspace
+.vscode/
+.idea/
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CPackConfig.cmake
+_CPack_Packages/
+
+# Other common temporary files
+*~
+*.bak
+*.swp
+*.tmp
+*.log
+*.DS_Store
+Thumbs.db
+
+comments.txt
+instances1/
+test_gurobi.cpp
