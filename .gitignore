@@ -57,3 +57,4 @@ comments.txt
 instances/*
 !/instances/.gitkeep
 test*
+solver
