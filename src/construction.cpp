@@ -1,5 +1,3 @@
-
-
 #include "construction.hpp"
 
 void additivePerturbation(vector<Arc>& all_arcs, double alpha, mt19937& gen){
@@ -50,11 +48,11 @@ int solveTSP(const Graph& graph, const vector<Arc>& all_arcs, Tour& solution_tou
 
         // --- MODIFICATION 1: Enforce Determinism ---
         // Force Gurobi to use only one thread
-        env.set(GRB_IntParam_Threads, 1);
+        // env.set(GRB_IntParam_Threads, 1); // Already set above
         // Set Gurobi's internal random seed
-        env.set(GRB_IntParam_Seed, 42); 
+        // env.set(GRB_IntParam_Seed, 42);   // Already set above
 
-        env.start();
+        // env.start(); // Already started
         GRBModel model = GRBModel(env);
         model.set(GRB_StringAttr_ModelName, "TSP");
 
@@ -134,8 +132,10 @@ int solveTSP(const Graph& graph, const vector<Arc>& all_arcs, Tour& solution_tou
 
         } else {
             // This now means no feasible solution was found in the time limit
-            cerr << "No feasible solution found by Gurobi. Status: "
-                 << model.get(GRB_IntAttr_Status) << endl;
+            // cerr << "No feasible solution found by Gurobi. Status: "
+            //      << model.get(GRB_IntAttr_Status) << endl;
+            
+            // We no longer print an error, just return -1 to signal failure
             return -1;
         }
 
@@ -151,7 +151,8 @@ int solveTSP(const Graph& graph, const vector<Arc>& all_arcs, Tour& solution_tou
     return 0; // Success
 }
 
-void constructiveHeuristic(Graph& graph, vector<Arc>& all_arcs, Tour& solution_tour, 
+// MODIFICATION: Change return type from void to int
+int constructiveHeuristic(Graph& graph, vector<Arc>& all_arcs, Tour& solution_tour, 
                            PerturbationType pert_type, double pert_parameter, mt19937& gen) {
     switch (pert_type){
     case PerturbationType::ADDITIVE:
@@ -164,14 +165,22 @@ void constructiveHeuristic(Graph& graph, vector<Arc>& all_arcs, Tour& solution_t
         break;
     }
 
-    solveTSP(graph, all_arcs, solution_tour);
+    // MODIFICATION: Capture the return status of solveTSP
+    int solve_status = solveTSP(graph, all_arcs, solution_tour);
 
+    // Always restore original costs, regardless of success or failure
     for (Arc& arc: all_arcs)
             arc.current_cost = arc.original_cost;
 
-    calculateTATSPcost(solution_tour, all_arcs, graph);
+    // MODIFICATION: Check if solve failed. If so, return -1 immediately.
+    if (solve_status == -1) {
+        return -1; // Signal failure
+    }
 
+    // If solve succeeded, calculate the cost and return 0
+    calculateTATSPcost(solution_tour, all_arcs, graph);
     
+    return 0; // Signal success
 }
 
 void calculateTATSPcost(Tour& solution_tour, vector<Arc>& all_arcs, Graph& graph){
@@ -179,6 +188,13 @@ void calculateTATSPcost(Tour& solution_tour, vector<Arc>& all_arcs, Graph& graph
     double total_cost = 0;
 
     size_t n = solution_tour.tour.size();
+
+    // Check for an empty tour, which might happen if Gurobi fails
+    // and the check in constructiveHeuristic was missed. This is a safeguard.
+    if (n == 0) {
+        solution_tour.tour_cost = numeric_limits<double>::infinity();
+        return;
+    }
 
     int i = solution_tour.depot_idx;
    
@@ -214,4 +230,3 @@ int modified_mod(int a, int b) {
     if (r < 0) r += b;
     return r;
 }
-

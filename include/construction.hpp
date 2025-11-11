@@ -22,9 +22,9 @@ void multiplicativePerturbation(vector<Arc>& all_arcs, double beta, mt19937& gen
 //solves asymmetric TSP and stores the solution at solution_tour
 int solveTSP(const Graph& graph, const vector<Arc>& all_arcs, Tour& solution_tour);
 
-void constructiveHeuristic(Graph& graph, vector<Arc>& all_arcs, Tour& solution_tour, 
+int constructiveHeuristic(Graph& graph, vector<Arc>& all_arcs, Tour& solution_tour, 
                            PerturbationType pert_type, double pert_parameter, mt19937& gen);
-
+                           
 void calculateTATSPcost(Tour& solution_tour, vector<Arc>& all_arcs, Graph& graph);
 
 // modified mod to handle negative int properly

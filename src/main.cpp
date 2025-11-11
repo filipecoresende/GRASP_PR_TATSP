@@ -28,10 +28,21 @@ int main(int argc, char **argv) {
     }
 
     PerturbationType pert_type;
+    string pert_type_str;
+
     switch (pert_type_int) {
-        case 0: pert_type = PerturbationType::NONE; break;
-        case 1: pert_type = PerturbationType::ADDITIVE; break;
-        case 2: pert_type = PerturbationType::MULTIPLICATIVE; break;
+        case 0: 
+            pert_type = PerturbationType::NONE;
+            pert_type_str = "NONE"; 
+            break;
+        case 1: 
+            pert_type = PerturbationType::ADDITIVE;
+            pert_type_str = "ADDITIVE"; 
+            break;
+        case 2: 
+            pert_type = PerturbationType::MULTIPLICATIVE;
+            pert_type_str = "MULTIPLICATIVE"; 
+            break;
         default:
             cerr << "Error: Invalid perturbation type. Use 0, 1, or 2." << endl;
             return 1;
@@ -42,11 +53,11 @@ int main(int argc, char **argv) {
     vector<Arc> all_arcs;
     parser(filename, graph, all_arcs);
 
-    vector<Tour> pool;
-    pool.reserve(2000);
+    // vector<Tour> pool;
+    // pool.reserve(2000);
 
     cout << "Starting search for " << time_limit << " seconds..." << endl;
-    cout << "Configuration: Type=" << pert_type_int << ", Param=" << pert_parameter << endl;
+    cout << "Configuration: Type=" << pert_type_str << ", Param=" << pert_parameter << endl;
 
     // 3. Search Loop
     auto start_time = chrono::steady_clock::now();
@@ -55,8 +66,11 @@ int main(int argc, char **argv) {
     mt19937 gen(seed);
     
     int best_iteration = -1;
-    double best_cost = numeric_limits<double>::infinity();
+    // double best_cost = numeric_limits<double>::infinity();
 
+    Tour best_tour;
+    best_tour.tour_cost = numeric_limits<double>::infinity();
+    int count = 0;
     while (true) {
         // Use duration<double> for precise comparison against the double time_limit
         chrono::duration<double> elapsed = chrono::steady_clock::now() - start_time;
@@ -65,37 +79,51 @@ int main(int argc, char **argv) {
         }
 
         Tour solution_tour;
-        constructiveHeuristic(graph, all_arcs, solution_tour, pert_type, pert_parameter, gen);
+        // MODIFICATION: Capture the return status from constructiveHeuristic
+        int construct_status = constructiveHeuristic(graph, all_arcs, solution_tour, pert_type, pert_parameter, gen);
+        
+        // MODIFICATION: If construction failed, skip local search and recording
+        if (construct_status == -1) {
+            // This iteration failed to find a feasible solution, skip to the next
+            count++;
+            continue;
+        }
+
         localSearch(solution_tour, all_arcs, graph);
         
-        pool.push_back(solution_tour);
+        // pool.push_back(solution_tour);
 
-        if (solution_tour.tour_cost < best_cost) {
-            best_cost = solution_tour.tour_cost;
-            best_iteration = static_cast<int>(pool.size()); // current iteration number (1-based)
+        if (solution_tour.tour_cost < best_tour.tour_cost) {
+            best_tour = solution_tour;
+            best_iteration = count;
         }
+
+        count++;
     }
 
     // 4. Results Reporting
-    if (pool.empty()) {
+    if (best_iteration == -1) {
         cout << "No solutions found within time limit." << endl;
         return 0;
     }
 
-    Tour best_tour = pool[best_iteration - 1];
-
     cout << "------------------------------------------------" << endl;
     cout << "Search Finished." << endl;
-    cout << "Total Iterations: " << pool.size() << endl;
+    cout << "Total Iterations: " << count << endl;
     cout << "Best Tour Cost: " << best_tour.tour_cost << endl;
     cout << "Best Tour Path: ";
 
     size_t i = 0;
-    while (i < best_tour.tour.size() - 1){
-        cout << best_tour.tour[i] << ",";
-        i++;
+    // MODIFICATION: Add check for non-empty tour before printing
+    if (!best_tour.tour.empty()) {
+        while (i < best_tour.tour.size() - 1){
+            cout << best_tour.tour[i] << ",";
+            i++;
+        }
+        cout << best_tour.tour[i] << endl;
+    } else {
+        cout << "[Empty Tour]" << endl;
     }
-    cout << best_tour.tour[i] << endl;
     
     cout << "Best Tour Found at Iteration: " << best_iteration << endl;
     cout << endl;
