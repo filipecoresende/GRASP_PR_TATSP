@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdlib>
+
 #include <vector>
 using namespace std;
 
@@ -15,4 +17,10 @@ struct Arc {
 
 struct Graph {
     vector<vector<int>> adj; //for each node there is a vector of arc indexes
+};
+
+struct Tour {
+    vector<int> tour;
+    double tour_cost;
+    size_t depot_idx = 0;
 };

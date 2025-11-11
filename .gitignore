@@ -54,5 +54,6 @@ _CPack_Packages/
 Thumbs.db
 
 comments.txt
-instances1/
-test_gurobi.cpp
+instances/*
+!/instances/.gitkeep
+test*

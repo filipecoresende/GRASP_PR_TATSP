@@ -17,7 +17,7 @@ LDLIBS = $(GUROBI_LIBS)
 SRC_DIR = src
 BUILD_DIR = build
 
-SRCS_MAIN = $(SRC_DIR)/main.cpp $(SRC_DIR)/parser.cpp $(SRC_DIR)/construction.cpp
+SRCS_MAIN = $(SRC_DIR)/main.cpp $(SRC_DIR)/parser.cpp $(SRC_DIR)/construction.cpp $(SRC_DIR)/local_search.cpp
 OBJS_MAIN = $(SRCS_MAIN:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
 EXEC_MAIN = solver
