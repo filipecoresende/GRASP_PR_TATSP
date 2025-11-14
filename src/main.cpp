@@ -2,21 +2,51 @@
 #include "construction.hpp"
 #include "datatypes.hpp"
 #include "local_search.hpp"
+#include "path_relinking.hpp"
+
+#include <chrono>
+#include <vector>   // NEW: Include for vector
+#include <string>   // NEW: Include for string processing
 
 using namespace std;
 
+const int POOL_SIZE = 10;
+
+
 int main(int argc, char **argv) {
     // 1. Argument Parsing and Validation
-    if (argc < 5) {
-        cout << "Usage: " << argv[0] << " <filename> <pert_type> <pert_param> <time_limit>" << endl;
+
+    // --- NEW: Argument parsing logic ---
+    bool path_flag = false;
+    vector<string> positional_args;
+
+    // Loop through all command-line arguments (starting from 1, skipping executable name)
+    for (int i = 1; i < argc; ++i) {
+        string arg = argv[i];
+        if (arg == "-pr") {
+            path_flag = true;
+        } else {
+            // This is not a flag we recognize, assume it's a positional argument
+            positional_args.push_back(arg);
+        }
+    }
+    // --- END NEW ---
+
+
+    // MODIFIED: Check if we have the correct number of POSITIONAL arguments
+    if (positional_args.size() < 4) {
+        // MODIFIED: Updated usage message
+        cout << "Usage: " << argv[0] << " <filename> <pert_type> <pert_param> <time_limit> [-pr]" << endl;
         cout << "Perturbation Types: 0 (NONE), 1 (ADDITIVE), 2 (MULTIPLICATIVE)" << endl;
+        cout << "Optional flag: -pr (to enable Path Relinking)" << endl; // NEW
         return 1;
     }
 
-    string filename = argv[1];
-    int pert_type_int = stoi(argv[2]);
-    double pert_parameter = stod(argv[3]);
-    double time_limit = stod(argv[4]);
+    // MODIFIED: Parse arguments from our new vector
+    string filename = positional_args[0];
+    int pert_type_int = stoi(positional_args[1]);
+    double pert_parameter = stod(positional_args[2]);
+    double time_limit = stod(positional_args[3]);
 
     if (pert_parameter < 0) {
         cerr << "Error: Perturbation parameter must be non-negative." << endl;
@@ -58,12 +88,17 @@ int main(int argc, char **argv) {
 
     cout << "Starting search for " << time_limit << " seconds..." << endl;
     cout << "Configuration: Type=" << pert_type_str << ", Param=" << pert_parameter << endl;
+    cout << "Path Relinking: " << (path_flag ? "ENABLED" : "DISABLED") << endl; // NEW: Report PR status
 
     // 3. Search Loop
     auto start_time = chrono::steady_clock::now();
 
-    unsigned int seed = 42;
-    mt19937 gen(seed);
+    unsigned int seed_grasp = 42;
+    unsigned int seed_pr = 12345;
+
+    mt19937 gen_grasp(seed_grasp);
+    mt19937 gen_pr(seed_pr);
+
     
     int best_iteration = -1;
     // double best_cost = numeric_limits<double>::infinity();
@@ -71,6 +106,8 @@ int main(int argc, char **argv) {
     Tour best_tour;
     best_tour.tour_cost = numeric_limits<double>::infinity();
     int count = 0;
+    vector<Tour> pool;
+    pool.reserve(POOL_SIZE);
     while (true) {
         // Use duration<double> for precise comparison against the double time_limit
         chrono::duration<double> elapsed = chrono::steady_clock::now() - start_time;
@@ -80,7 +117,7 @@ int main(int argc, char **argv) {
 
         Tour solution_tour;
         // MODIFICATION: Capture the return status from constructiveHeuristic
-        int construct_status = constructiveHeuristic(graph, all_arcs, solution_tour, pert_type, pert_parameter, gen);
+        int construct_status = constructiveHeuristic(graph, all_arcs, solution_tour, pert_type, pert_parameter, gen_grasp);
         
         // MODIFICATION: If construction failed, skip local search and recording
         if (construct_status == -1) {
@@ -90,8 +127,21 @@ int main(int argc, char **argv) {
         }
 
         localSearch(solution_tour, all_arcs, graph);
-        
-        // pool.push_back(solution_tour);
+
+        if (path_flag) {
+            if (pool.size() < POOL_SIZE) {
+                pool.push_back(solution_tour);
+            }
+            
+            else {
+                Tour guidingSolution = pool[selectGuidingSolution(solution_tour, pool, gen_pr)];
+                solution_tour = mixedPathRelinking(solution_tour, guidingSolution, graph, all_arcs);
+                localSearch(solution_tour, all_arcs, graph);
+                updatePool(solution_tour, pool);
+            }
+
+        }
+
 
         if (solution_tour.tour_cost < best_tour.tour_cost) {
             best_tour = solution_tour;
@@ -100,6 +150,9 @@ int main(int argc, char **argv) {
 
         count++;
     }
+
+
+
 
     // 4. Results Reporting
     if (best_iteration == -1) {
