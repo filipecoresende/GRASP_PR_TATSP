@@ -48,6 +48,13 @@ int main(int argc, char **argv) {
     double pert_parameter = stod(positional_args[2]);
     double time_limit = stod(positional_args[3]);
 
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file '" << filename << "'. Check if the file exists and is readable." << endl;
+        return 1;
+    }
+    file.close();
+
     if (pert_parameter < 0) {
         cerr << "Error: Perturbation parameter must be non-negative." << endl;
         return 1;
@@ -93,15 +100,13 @@ int main(int argc, char **argv) {
     // 3. Search Loop
     auto start_time = chrono::steady_clock::now();
 
-    unsigned int seed_grasp = 42;
-    unsigned int seed_pr = 12345;
+    random_device rd;
 
-    mt19937 gen_grasp(seed_grasp);
-    mt19937 gen_pr(seed_pr);
+    mt19937 gen_grasp(rd());
+    mt19937 gen_pr(rd());
 
     
-    int best_iteration = -1;
-    // double best_cost = numeric_limits<double>::infinity();
+    int best_iteration = 0;
 
     Tour best_tour;
     best_tour.tour_cost = numeric_limits<double>::infinity();
@@ -155,7 +160,7 @@ int main(int argc, char **argv) {
 
 
     // 4. Results Reporting
-    if (best_iteration == -1) {
+    if (best_iteration == 0) {
         cout << "No solutions found within time limit." << endl;
         return 0;
     }

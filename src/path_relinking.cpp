@@ -66,7 +66,6 @@ Tour mixedPathRelinking(Tour solution1, Tour solution2, Graph& graph, vector<Arc
         
 }
 
-
 int calculateHammingDistance(Tour& solution1, Tour& solution2) {
 
     size_t n = solution1.tour.size();
